@@ -2,6 +2,7 @@ package com.shaigor.example.openapi.model;
 
 import java.util.Optional;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -17,5 +18,6 @@ public abstract class Model {
 
     public abstract Optional<String> getOptionalString();
 
+    // Uncomment to work around the missing property @Schema
     public abstract Optional<Model> getParent();
 }
