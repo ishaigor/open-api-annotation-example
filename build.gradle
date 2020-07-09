@@ -1,0 +1,114 @@
+buildscript {
+
+    repositories {
+        mavenLocal()
+        jcenter()
+        mavenCentral()
+    }
+}
+plugins {
+	id "java"
+	id "io.swagger.core.v3.swagger-gradle-plugin" version "2.1.3"
+}
+
+group = 'com.shaigor.example.openapi'
+version = '1.0'
+sourceCompatibility = 11
+targetCompatibility = 11
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+task allDeps(type: DependencyReportTask) {}
+
+task sourcesJar(type: Jar) {
+	from sourceSets.main.allJava
+	archiveClassifier = 'sources'
+}
+
+tasks.withType(Test) {
+	useJUnitPlatform()
+}
+
+tasks.withType(Jar) {
+	doFirst {
+		// Attributes to show under /util/build
+		manifest {
+			attributes "Project-Name"          : project.name
+			attributes "Implementation-Version": project.version
+			attributes "Build-Time"            : OffsetDateTime.now().toString()
+			attributes "Built-By"              : System.getProperty("user.name")
+			attributes "Build-Jdk"             : System.getProperty('java.version')
+			attributes "Build-Using"           : "Gradle ${project.gradle.gradleVersion}"
+		}
+	}
+}
+
+repositories {
+	mavenLocal()
+	jcenter()
+	mavenCentral()
+}
+def jacksonVersion = findProperty('com.fasterxml.jackson.version')
+def junitJupiterVersion = findProperty('org.junit.jupiter.version')
+def junitPlatformVersion = findProperty('org.junit.platform.version')
+def slf4Version = findProperty('org.slf4.version')
+def swaggerV3Version = findProperty('io.swagger.v3.version')
+def immutablesVersion = findProperty('org.immutables.version')
+
+dependencies {
+	compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+	compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+	compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+	compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
+	compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
+	compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:${jacksonVersion}"
+	compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
+	compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+	compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${jacksonVersion}"
+	compile "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
+	compile "com.fasterxml.jackson.module:jackson-module-jaxb-annotations:${jacksonVersion}"
+	compile group: 'io.swagger.core.v3', name: 'swagger-annotations', version: "${swaggerV3Version}"
+	compile group: 'io.swagger.core.v3', name: 'swagger-core', version: "$swaggerV3Version"
+	compile group: 'io.swagger.core.v3', name: 'swagger-models', version: "$swaggerV3Version"
+	compile group: 'javax.ws.rs', name: 'javax.ws.rs-api', version: '2.0.1'
+	compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.11.2'
+    compile group: 'org.immutables',  name:'value', version: "${immutablesVersion}"
+	compile "org.slf4j:slf4j-api:${slf4Version}"
+	compile "org.slf4j:slf4j-ext:${slf4Version}"
+
+	testCompile(group: 'org.junit.platform', name: 'junit-platform-runner', version: junitPlatformVersion) {
+		exclude(module: 'junit')
+	}
+	testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: junitJupiterVersion
+	testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: junitJupiterVersion
+	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junitJupiterVersion
+
+	testCompile group: 'org.hamcrest', name: 'hamcrest', version: '2.1'
+
+	testCompile group: 'org.mockito', name: 'mockito-core', version: '3.0.0'
+	testCompile (group: 'org.mockito', name: 'mockito-junit-jupiter', version: '3.0.0') {
+		exclude(module: 'junit-jupiter-api')
+	}
+}
+resolve {
+	outputFormat = 'JSONANDYAML'
+	prettyPrint = 'TRUE'
+	classpath = sourceSets.main.runtimeClasspath
+	resourcePackages = [
+			'com.shaigor.example.openapi',
+			'com.shaigor.example.openapi.model',
+	]
+	outputDir =file("${project.buildDir}/openapi")
+	readAllResources = false // Only produce output for methods with swagger-annotations:2.x
+}
+def assembleTask = tasks.getByName("assemble")
+def resolveTask = tasks.getByName("resolve")
+assembleTask.dependsOn resolveTask
+configurations.all {
+	resolutionStrategy {
+		failOnVersionConflict()
+		force "org.slf4j:slf4j-api:${slf4Version}"
+		force "org.slf4j:slf4j-ext:${slf4Version}"
+	}
+}
